@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+adp_cache/
+season_data/
+uploads/players.csv
+.env
