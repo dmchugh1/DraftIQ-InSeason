@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>DraftIQ — Season</title>
+<meta name="theme-color" content="#10131A">
+<style>
+  :root {
+    --bg: #10131A;
+    --panel: #171B24;
+    --panel-2: #1E2330;
+    --line: #2A3040;
+    --text: #E8EAF0;
+    --muted: #8A90A3;
+    --field: #4FAE7C;
+    --field-dim: #2C6B4C;
+    --amber: #E0A840;
+    --red: #D9605C;
+    --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 14px;
+    overflow-x: hidden;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 22px;
+    border-bottom: 1px solid var(--line);
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  header .brand { font-family: var(--mono); font-weight: 700; font-size: 16px; }
+  header .brand span { color: var(--field); }
+  header a { color: var(--muted); text-decoration: none; font-size: 13px; }
+  header a:hover { color: var(--text); }
+  main { max-width: 900px; margin: 0 auto; padding: 20px 20px 60px; }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 16px;
+  }
+  .card h2 { font-size: 14px; margin: 0 0 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 10px; }
+  .empty { color: var(--muted); padding: 16px; text-align: center; }
+
+  button.action {
+    background: var(--field-dim); color: #E8FBF0; border: 1px solid var(--field);
+    border-radius: 6px; padding: 8px 14px; cursor: pointer; font-size: 13px; font-weight: 600;
+  }
+  button.action:hover { background: var(--field); color: #0B1610; }
+  button.secondary {
+    background: none; border: 1px solid var(--line); color: var(--text);
+    border-radius: 6px; padding: 8px 14px; cursor: pointer; font-size: 13px;
+  }
+  button.secondary:hover { border-color: var(--muted); }
+  button.secondary.active { border-color: var(--amber); color: var(--amber); }
+
+  input[type=text], input[type=number], select, textarea {
+    background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
+    padding: 7px 10px; border-radius: 6px; font-size: 13px; font-family: inherit;
+  }
+  textarea { width: 100%; min-height: 110px; font-family: var(--mono); font-size: 12.5px; }
+  .toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; color: var(--muted); font-weight: 600; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+  td { padding: 7px 8px; border-bottom: 1px solid var(--line); }
+  .num { font-family: var(--mono); }
+  .pos-tag { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+
+  .lineup-slot { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-radius: 6px; margin-bottom: 6px; background: rgba(79,174,124,0.08); border: 1px solid var(--field-dim); }
+  .lineup-slot .slot-label { font-family: var(--mono); font-size: 12px; color: var(--muted); min-width: 46px; }
+  .lineup-slot .name { font-weight: 600; }
+  .lineup-slot .proj { font-family: var(--mono); color: var(--field); }
+  .bench-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; color: var(--muted); font-size: 13px; }
+
+  .card-header-toggle { display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; }
+  .card-header-toggle .chevron { color: var(--muted); font-size: 13px; transition: transform 0.15s ease; }
+  .card-header-toggle.collapsed .chevron { transform: rotate(-90deg); }
+
+  .pane-tabs { display: flex; gap: 2px; overflow-x: auto; border-bottom: 1px solid var(--line); margin-bottom: 18px; }
+  .pane-tabs button { flex: 0 0 auto; background: none; border: none; border-bottom: 2px solid transparent; color: var(--muted); padding: 9px 14px; font-size: 13.5px; cursor: pointer; white-space: nowrap; }
+  .pane-tabs button:hover { color: var(--text); }
+  .pane-tabs button.active { color: var(--text); border-bottom-color: var(--amber); font-weight: 600; }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .warn-banner { background: rgba(224,168,64,0.12); border: 1px solid rgba(224,168,64,0.4); color: var(--amber); padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 14px; }
+
+  @media (max-width: 700px) {
+    main { padding: 14px 12px 60px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">DRAFT<span>IQ</span> · Season</div>
+  <a href="/draft">← Back to Draft Room</a>
+</header>
+
+<main>
+
+  <div class="card">
+    <div class="toolbar" style="margin-bottom:0">
+      <span class="sub" style="margin:0">My team:</span>
+      <select id="myTeamSelect"></select>
+      <span class="sub" style="margin:0">Week:</span>
+      <select id="weekSelect">
+        <option value="season">Season-long</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header-toggle collapsed" id="leagueSetupHeader">
+      <h2>League &amp; Rosters</h2>
+      <span class="chevron">▾</span>
+    </div>
+    <div id="leagueSetupBody" style="display:none">
+      <div class="sub">Rosters here are shared with anyone else using this deployment for the same league — save your league's actual teams once, and everyone gets recommendations built on real rosters, not a guess.</div>
+      <div class="toolbar" style="margin-top:10px">
+        <button class="action" id="btnImportFromDraft">Import Rosters from Draft</button>
+      </div>
+      <div id="importStatus" class="sub"></div>
+      <div class="toolbar" style="margin-top:10px">
+        <label>Teams <input type="number" id="numTeamsInput" min="2" max="32" style="width:60px"></label>
+        <button class="secondary" id="btnSaveLeagueSize">Save Team Count</button>
+      </div>
+      <div id="teamsEditor"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header-toggle collapsed" id="projectionsHeader">
+      <h2>Upload Projections</h2>
+      <span class="chevron">▾</span>
+    </div>
+    <div id="projectionsBody" style="display:none">
+      <div class="sub">CSV columns: name (or player), position (or pos), team, and a projection column (proj_points, points, proj, or fpts). Upload once per week for weekly start/sit and waivers, or as "Season-long" for trade value.</div>
+      <div class="toolbar" style="margin-top:10px">
+        <select id="uploadWeekSelect">
+          <option value="season">Season-long</option>
+        </select>
+        <input type="number" id="uploadWeekNumber" min="1" max="30" placeholder="or week #" style="width:100px">
+        <input type="file" id="projFileInput" accept=".csv">
+        <button class="action" id="btnUploadProjections">Upload</button>
+      </div>
+      <div id="uploadStatus" class="sub"></div>
+    </div>
+  </div>
+
+  <div class="pane-tabs">
+    <button data-view="startsit" class="active">Start / Sit</button>
+    <button data-view="waivers">Waiver Wire</button>
+    <button data-view="trades">Trades</button>
+  </div>
+
+  <div class="view active" id="view-startsit">
+    <div class="card">
+      <h2 id="startSitTeamName">Optimal Lineup</h2>
+      <div id="startSitBox" class="empty">Set up your team's roster and upload projections to see start/sit advice.</div>
+    </div>
+  </div>
+
+  <div class="view" id="view-waivers">
+    <div class="card">
+      <h2>Waiver Wire / Free Agent Upgrades</h2>
+      <div class="sub">Bench players with a meaningfully higher-projected free agent available at the same position.</div>
+      <div id="waiversBox" class="empty">Nothing to show yet.</div>
+    </div>
+  </div>
+
+  <div class="view" id="view-trades">
+    <div class="card">
+      <h2>Trade Targets</h2>
+      <div class="sub">Positions where another team's surplus lines up with your need — a starting point for a conversation, not a finished offer.</div>
+      <div id="tradesBox" class="empty">Nothing to show yet.</div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const $ = sel => document.querySelector(sel);
+const $$ = sel => document.querySelectorAll(sel);
+
+async function api(path, opts) {
+  const res = await fetch(path, opts);
+  return res.json();
+}
+async function apiGet(path) { return api(path); }
+async function apiPost(path, body) {
+  return api(path, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body||{})});
+}
+
+function wireCollapsible(headerId, bodyId) {
+  const header = $(headerId), body = $(bodyId);
+  header.addEventListener("click", () => {
+    const collapsed = body.style.display === "none";
+    body.style.display = collapsed ? "" : "none";
+    header.classList.toggle("collapsed", !collapsed);
+  });
+}
+wireCollapsible("#leagueSetupHeader", "#leagueSetupBody");
+wireCollapsible("#projectionsHeader", "#projectionsBody");
+
+$$(".pane-tabs button").forEach(btn => {
+  btn.addEventListener("click", () => {
+    $$(".pane-tabs button").forEach(b => b.classList.toggle("active", b === btn));
+    $$(".view").forEach(v => v.classList.remove("active"));
+    $("#view-" + btn.dataset.view).classList.add("active");
+    refreshView(btn.dataset.view);
+  });
+});
+
+function currentWeek() {
+  return $("#weekSelect").value;
+}
+
+function populateWeekOptions(selectEl, keepSelection) {
+  const current = selectEl.value;
+  const options = ['<option value="season">Season-long</option>'];
+  for (let w = 1; w <= 18; w++) options.push(`<option value="${w}">Week ${w}</option>`);
+  selectEl.innerHTML = options.join("");
+  if (keepSelection && [...selectEl.options].some(o => o.value === current)) selectEl.value = current;
+}
+populateWeekOptions($("#weekSelect"));
+populateWeekOptions($("#uploadWeekSelect"));
+$("#weekSelect").addEventListener("change", () => refreshView(activeView()));
+
+function activeView() {
+  const btn = document.querySelector(".pane-tabs button.active");
+  return btn ? btn.dataset.view : "startsit";
+}
+
+// ---------- League setup ----------
+let leagueCache = null;
+
+async function loadLeague() {
+  const league = await apiGet("/api/season/league");
+  leagueCache = league;
+
+  $("#numTeamsInput").value = league.num_teams;
+
+  const teamSelect = $("#myTeamSelect");
+  const keep = teamSelect.value;
+  teamSelect.innerHTML = Object.entries(league.teams)
+    .map(([num, t]) => `<option value="${num}">${t.name}</option>`)
+    .join("");
+  teamSelect.value = [...teamSelect.options].some(o => o.value === keep) ? keep : String(league.my_team);
+
+  renderTeamsEditor(league);
+  return league;
+}
+
+function renderTeamsEditor(league) {
+  const container = $("#teamsEditor");
+  container.innerHTML = Object.entries(league.teams).map(([num, t]) => `
+    <div class="card" style="background:var(--panel-2);margin-top:10px">
+      <div class="toolbar">
+        <input type="text" class="team-name-input" data-team="${num}" value="${t.name.replace(/"/g,'&quot;')}" style="font-weight:600">
+        <span class="sub" style="margin:0">Team ${num}</span>
+      </div>
+      <div class="sub" style="margin-bottom:4px">Roster — one player name per line</div>
+      <textarea class="team-roster-input" data-team="${num}">${t.roster.join("\n")}</textarea>
+      <div style="margin-top:8px">
+        <button class="secondary btn-save-team" data-team="${num}">Save Team ${num}</button>
+      </div>
+    </div>
+  `).join("");
+
+  container.querySelectorAll(".btn-save-team").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const num = btn.dataset.team;
+      const name = container.querySelector(`.team-name-input[data-team="${num}"]`).value.trim();
+      const roster = container.querySelector(`.team-roster-input[data-team="${num}"]`).value
+        .split("\n").map(s => s.trim()).filter(Boolean);
+      btn.textContent = "Saving…";
+      await apiPost(`/api/season/team/${num}`, {name, roster});
+      btn.textContent = `Save Team ${num}`;
+      await loadLeague();
+      refreshView(activeView());
+    });
+  });
+}
+
+$("#btnSaveLeagueSize").addEventListener("click", async () => {
+  const n = parseInt($("#numTeamsInput").value);
+  await apiPost("/api/season/league", {num_teams: n});
+  await loadLeague();
+});
+
+$("#btnImportFromDraft").addEventListener("click", async () => {
+  const status = $("#importStatus");
+  status.textContent = "Importing…";
+  const d = await apiPost("/api/season/import_from_draft", {});
+  if (!d.ok) { status.textContent = `⚠️ ${d.message}`; return; }
+  status.textContent = `Imported ${d.num_teams} teams from the draft. Your team is set to Team ${d.my_team}.`;
+  await loadLeague();
+  refreshView(activeView());
+});
+
+$("#myTeamSelect").addEventListener("change", async (e) => {
+  await apiPost("/api/season/my_team", {team_number: parseInt(e.target.value)});
+  refreshView(activeView());
+});
+
+// ---------- Projections upload ----------
+$("#btnUploadProjections").addEventListener("click", async () => {
+  const file = $("#projFileInput").files[0];
+  const status = $("#uploadStatus");
+  if (!file) { status.textContent = "Choose a file first."; return; }
+
+  const weekNumber = $("#uploadWeekNumber").value.trim();
+  const week = weekNumber ? weekNumber : $("#uploadWeekSelect").value;
+
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("week", week);
+  status.textContent = "Uploading…";
+  const res = await fetch("/api/season/projections/upload", {method:"POST", body: fd});
+  const d = await res.json();
+  status.textContent = d.ok
+    ? `Loaded ${d.players_loaded} projections for ${d.week === "season" ? "season-long" : "week " + d.week}.`
+    : `⚠️ ${d.message}`;
+  if (d.ok) refreshView(activeView());
+});
+
+// ---------- Start/Sit ----------
+async function refreshStartSit() {
+  const box = $("#startSitBox");
+  const d = await apiGet(`/api/season/start_sit?week=${encodeURIComponent(currentWeek())}`);
+  if (d.ok === false) { box.innerHTML = `<div class="empty">${d.message}</div>`; return; }
+
+  $("#startSitTeamName").textContent = `Optimal Lineup — ${d.team}${d.total !== undefined ? " (" + d.total + " pts)" : ""}`;
+
+  if (!d.lineup || d.lineup.length === 0) {
+    box.innerHTML = `<div class="empty">No roster saved for this team yet — add one under League &amp; Rosters.</div>`;
+    return;
+  }
+
+  let html = "";
+  if (d.warning) html += `<div class="warn-banner">${d.warning}</div>`;
+  html += d.lineup.map(p => `
+    <div class="lineup-slot">
+      <span class="slot-label">${p.slot}</span>
+      <span class="name">${p.name}</span>
+      <span class="pos-tag">${p.position}${p.team ? " · " + p.team : ""}</span>
+      <span class="proj">${p.proj !== null && p.proj !== undefined ? p.proj.toFixed(1) : "–"}</span>
+    </div>
+  `).join("");
+
+  if (d.bench && d.bench.length) {
+    html += `<div class="sub" style="margin-top:14px">Bench</div>`;
+    html += d.bench.map(p => `
+      <div class="bench-row">
+        <span>${p.name} <span class="pos-tag">${p.position}</span></span>
+        <span class="num">${p.proj !== null && p.proj !== undefined ? p.proj.toFixed(1) : "–"}</span>
+      </div>
+    `).join("");
+  }
+
+  box.innerHTML = html;
+}
+
+// ---------- Waivers ----------
+async function refreshWaivers() {
+  const box = $("#waiversBox");
+  const d = await apiGet(`/api/season/waivers?week=${encodeURIComponent(currentWeek())}`);
+  if (d.ok === false) { box.innerHTML = `<div class="empty">${d.message}</div>`; return; }
+  if (d.warning) { box.innerHTML = `<div class="empty">${d.warning}</div>`; return; }
+  if (!d.recommendations || d.recommendations.length === 0) {
+    box.innerHTML = `<div class="empty">No upgrades found at ${$("#weekSelect").selectedOptions[0].text.toLowerCase()} threshold — your roster looks solid, or projections haven't been uploaded for enough free agents.</div>`;
+    return;
+  }
+  box.innerHTML = `
+    <table><thead><tr><th>Position</th><th>Drop</th><th>Add</th><th>Improvement</th></tr></thead><tbody>
+      ${d.recommendations.map(r => `
+        <tr>
+          <td class="pos-tag">${r.position}</td>
+          <td>${r.drop} <span class="num" style="color:var(--muted)">(${r.drop_proj})</span></td>
+          <td>${r.add} <span class="num" style="color:var(--field)">(${r.add_proj})</span></td>
+          <td class="num" style="color:var(--field)">+${r.improvement}</td>
+        </tr>
+      `).join("")}
+    </tbody></table>
+  `;
+}
+
+// ---------- Trades ----------
+async function refreshTrades() {
+  const box = $("#tradesBox");
+  const d = await apiGet(`/api/season/trades?week=${encodeURIComponent(currentWeek())}`);
+  if (d.ok === false) { box.innerHTML = `<div class="empty">${d.message}</div>`; return; }
+
+  const needs = Object.entries(d.my_needs || {});
+  let html = `<div class="sub">Your position balance (negative = need, positive = surplus): ${
+    needs.map(([pos, v]) => `${pos} ${v > 0 ? "+" : ""}${v}`).join(" · ")
+  }</div>`;
+
+  if (!d.suggestions || d.suggestions.length === 0) {
+    html += `<div class="empty">No clear trade fits right now — either your needs are covered, or other teams' rosters aren't saved yet.</div>`;
+  } else {
+    html += d.suggestions.map(s => {
+      const header = `
+        <div class="sub" style="margin-top:14px;margin-bottom:6px">
+          <b style="color:var(--text)">${s.team}</b> — could offer: ${s.they_could_offer.join(", ")}
+          ${s.mutual_fit ? " · mutual fit: " + s.mutual_fit.join(", ") : " · no matching surplus of yours to offer back"}
+        </div>`;
+      if (!s.pairs || s.pairs.length === 0) {
+        return header;
+      }
+      const pairRows = s.pairs.map(p => `
+        <div class="lineup-slot" style="background:var(--panel-2);border-color:${p.mutually_beneficial ? "var(--field-dim)" : "var(--line)"};flex-direction:column;align-items:stretch;gap:8px;padding:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
+            <span class="name">You send: ${p.you_send} <span class="pos-tag">${p.you_send_position}</span> <span class="proj" style="color:var(--muted)">${p.you_send_proj.toFixed(1)}</span></span>
+            <span class="pos-tag" style="color:var(--amber)">⇄</span>
+            <span class="name">You get: ${p.you_get} <span class="pos-tag">${p.you_get_position}</span> <span class="proj" style="color:var(--muted)">${p.you_get_proj.toFixed(1)}</span></span>
+          </div>
+          <div class="sub" style="margin:0">
+            Your projected lineup: ${p.your_lineup_before} → ${p.your_lineup_after}
+            <span class="proj" style="color:var(--field)">(${p.your_lineup_delta > 0 ? "+" : ""}${p.your_lineup_delta} pts/wk)</span>
+          </div>
+          <div class="sub" style="margin:0">
+            Opponent's projected lineup: ${p.opponent_lineup_before} → ${p.opponent_lineup_after}
+            <span class="proj" style="color:${p.opponent_lineup_delta > 0 ? "var(--field)" : "var(--red)"}">(${p.opponent_lineup_delta > 0 ? "+" : ""}${p.opponent_lineup_delta} pts/wk)</span>
+          </div>
+          ${p.mutually_beneficial
+            ? `<div class="sub" style="margin:0;color:var(--field)">✓ Both teams' lineups improve — a realistic ask.</div>`
+            : `<div class="sub" style="margin:0;color:var(--amber)">⚠ Helps your lineup, but the opponent's gets worse by the numbers — may be a tough sell as-is.</div>`}
+        </div>
+      `).join("");
+      return header + pairRows;
+    }).join("");
+  }
+  box.innerHTML = html;
+}
+
+function refreshView(name) {
+  if (name === "startsit") refreshStartSit();
+  else if (name === "waivers") refreshWaivers();
+  else if (name === "trades") refreshTrades();
+}
+
+// Initial load
+(async () => {
+  await loadLeague();
+  refreshView("startsit");
+})();
+</script>
+
+</body>
+</html>
